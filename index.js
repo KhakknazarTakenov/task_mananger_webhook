@@ -79,19 +79,7 @@ const getAllUsersFromDepartments = async () => {
             allUsers = allUsers.concat(data.result);
             start += batchSize;
 
-            // Логируем прогресс
-            logMessage(
-                LOG_TYPES.I,
-                'getAllUsersFromDepartments',
-                `Получено ${data.result.length} пользователей, всего: ${allUsers.length}`
-            );
         }
-
-        logMessage(
-            LOG_TYPES.I,
-            'getAllUsersFromDepartments',
-            `Все пользователи получены, итого: ${allUsers.length}`
-        );
 
         return allUsers;
     } catch (error) {
@@ -148,7 +136,7 @@ app.post(BASE_URL + "move_task_in_project/", async (req, res) => {
 
         const users = await getAllUsersFromDepartments();
 
-        const task = await (await fetch(`${bxLinkDecrypted}/tasks.task.get?taskId=${taskId}&select[]=ID&select[]=TITLE&select[]=RESPONSIBLE_ID&select[]=DEADLINE&select[]=CHECKLIST&select[]=GROUP_ID`,{
+        const task = await (await fetch(`${bxLinkDecrypted}/tasks.task.get?taskId=${taskId}&select[]=ID&select[]=TITLE&select[]=RESPONSIBLE_ID&select[]=DEADLINE&select[]=CHECKLIST&select[]=GROUP_ID&select[]=UF_AUTO_554734207359&select[]=UF_AUTO_899417333101`,{
             method: "POST",
                 headers: { "Content-Type": "application/json" },
         })).json();
@@ -169,10 +157,45 @@ app.post(BASE_URL + "move_task_in_project/", async (req, res) => {
             throw new Error(`User ${taskResponsibleUser.ID} - ${taskResponsibleUser.NAME} is not in Integrators or Programmers departments`)
         }
 
+        if (taskData.ufAuto899417333101 === taskResponsibleUser.ID) {
+            logMessage(LOG_TYPES.A, BASE_URL+ '/move_task_in_project', `Same responsible for task ${taskId}`);
+            if (Number(taskData.ufAuto554734207359) !== Number(taskData.groupId)) {
+                const payload = {
+                    fields: {
+                        UF_AUTO_554734207359: taskData.groupId,
+                    },
+                };
+
+                const response = await (await fetch(`${bxLinkDecrypted}/tasks.task.update?taskId=${taskId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                })).json();
+
+                if (response.error) {
+                    throw new Error(response.error_description);
+                }
+
+                logMessage(LOG_TYPES.I, BASE_URL + "/move_task_in_project", `Task ${taskId} - ${taskData.title} added to group - ${groupId} within same responsible employee`)
+                res.send(response)
+            }
+            res.send();
+            return;
+        } else if (taskData.ufAuto554734207359
+            && taskData.ufAuto554734207359 !== ""
+            && (Number(taskData.groupId) === Number(taskData.ufAuto554734207359))
+            && groupId === Number(taskData.groupId)
+        ) {
+            logMessage(LOG_TYPES.A, BASE_URL+ '/move_task_in_project', `Task ${taskId} is already in project - ${taskData.ufAuto554734207359} - ${taskData.groupId} - ${groups.find(group => Number(group.ID) === Number(taskData.groupId)).NAME}`);
+            res.send();
+            return;
+        }
+
         const payload = {
             fields: {
                 GROUP_ID: groupId,                // ID проекта
-                // Другие поля: PRIORITY, TAGS и т.д., если нужны
+                UF_AUTO_554734207359: groupId,    // Предыдущая группа
+                UF_AUTO_899417333101: taskResponsibleUser.ID // Предыдущий ответственный
             },
         };
 
