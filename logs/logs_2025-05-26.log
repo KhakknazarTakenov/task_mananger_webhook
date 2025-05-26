@@ -1,0 +1,78 @@
+26.05.2025, 14:19:13 [INFO] - Source: /task_manager_webhook//move_task_in_project
+Task 19088 - Перезвонить Санжару в понедельник added to group - 150
+
+26.05.2025, 14:19:14 [ERROR] - Source: /task_manager_webhook//move_task_in_project
+Error: Error: User 8498 - Алихан is not in Integrators or Programmers departments
+    at file:///C:/Users/xaker/WebstormProjects/task_management_webhook/index.js:207:19
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+
+26.05.2025, 14:22:16 [INFO] - Source: /task_manager_webhook//move_task_in_project
+Task 16314 - Перезвон - узнать ответ по Битриксу added to group - 150
+
+26.05.2025, 14:22:17 [ERROR] - Source: /task_manager_webhook//move_task_in_project
+Error: Error: User 8498 - Алихан is not in Integrators or Programmers departments
+    at file:///C:/Users/xaker/WebstormProjects/task_management_webhook/index.js:207:19
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+
+26.05.2025, 14:23:11 [INFO] - Source: /task_manager_webhook//move_task_in_project
+Task 19370 - Доработки воронки продаж added to group - 150
+
+26.05.2025, 14:23:12 [ACCESS] - Source: /task_manager_webhook//move_task_in_project
+Same responsible for task 19370
+
+26.05.2025, 14:23:12 [ACCESS] - Source: /task_manager_webhook//move_task_in_project
+Same responsible for task 19370
+
+26.05.2025, 14:23:12 [INFO] - Source: /task_manager_webhook//move_task_in_project
+Task 19370 - Доработки воронки продаж added to group - 148 within same responsible employee
+
+26.05.2025, 14:23:12 [INFO] - Source: /task_manager_webhook//move_task_in_project
+Task 19370 - Доработки воронки продаж added to group - 148 within same responsible employee
+
+26.05.2025, 14:23:13 [ACCESS] - Source: /task_manager_webhook//move_task_in_project
+Same responsible for task 19370
+
+26.05.2025, 14:23:13 [ACCESS] - Source: /task_manager_webhook//move_task_in_project
+Same responsible for task 19370
+
+26.05.2025, 15:05:57 [INFO] - Source: /task_manager_webhook//move_task_in_project
+Task 18292 - Закрыть / Проконтролировать NDA и передать интеграторам таску added to group - 150
+
+26.05.2025, 15:05:58 [ERROR] - Source: /task_manager_webhook//move_task_in_project
+Error: Error: User 1422 - Петр is not in Integrators or Programmers departments
+    at file:///C:/Users/xaker/WebstormProjects/task_management_webhook/index.js:207:19
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+
+26.05.2025, 15:06:44 [ACCESS] - Source: /task_manager_webhook//move_task_in_project
+Same responsible for task 19380
+
+26.05.2025, 15:06:44 [ACCESS] - Source: /task_manager_webhook//move_task_in_project
+Same responsible for task 19378
+
+26.05.2025, 15:06:45 [ACCESS] - Source: /task_manager_webhook//move_task_in_project
+Same responsible for task 19378
+
+26.05.2025, 15:06:45 [ACCESS] - Source: /task_manager_webhook//move_task_in_project
+Same responsible for task 19376
+
+26.05.2025, 15:06:46 [ACCESS] - Source: /task_manager_webhook//move_task_in_project
+Same responsible for task 19376
+
+26.05.2025, 15:06:46 [ACCESS] - Source: /task_manager_webhook//move_task_in_project
+Same responsible for task 19380
+
+26.05.2025, 15:06:46 [ACCESS] - Source: /task_manager_webhook//move_task_in_project
+Same responsible for task 19374
+
+26.05.2025, 15:06:46 [ACCESS] - Source: /task_manager_webhook//move_task_in_project
+Same responsible for task 19378
+
+26.05.2025, 15:06:46 [ACCESS] - Source: /task_manager_webhook//move_task_in_project
+Same responsible for task 19380
+
+26.05.2025, 15:08:35 [ACCESS] - Source: /task_manager_webhook//move_task_in_project
+Same responsible for task 19302
+
+26.05.2025, 15:09:17 [ACCESS] - Source: /task_manager_webhook//move_task_in_project
+Same responsible for task 19378
+

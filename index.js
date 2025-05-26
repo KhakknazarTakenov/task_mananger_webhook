@@ -32,6 +32,10 @@ const departments = [
     {
         "ID": 154,
         "NAME": "Отдел программистов"
+    },
+    {
+        "ID": 7,
+        "NAME": "Отдел продаж"
     }
 ]
 
@@ -44,6 +48,10 @@ const groups = [
         "ID": 156,
         "NAME": "Программисты"
     },
+    {
+        "ID": 150,
+        "NAME": "Встреча"
+    }
 ]
 
 const getAllUsersFromDepartments = async () => {
@@ -88,6 +96,26 @@ const getAllUsersFromDepartments = async () => {
     }
 };
 
+const updateTask = async (taskId, payload) => {
+    try {
+        const bxLinkDecrypted = await decryptText(process.env.BX_LINK, process.env.CRYPTO_KEY, process.env.CRYPTO_IV);
+
+        const response = await (await fetch(`${bxLinkDecrypted}/tasks.task.update?taskId=${taskId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        })).json();
+
+        if (response.error) {
+            throw new Error(response.error_description);
+        }
+        return true;
+    } catch (error) {
+        logMessage(LOG_TYPES.E, "updateTask", error);
+        return false;
+    }
+}
+
 app.post(BASE_URL + "init/", async (req, res) => {
     try {
         const bxLink = req.body.bx_link;
@@ -127,7 +155,7 @@ app.post(BASE_URL + "init/", async (req, res) => {
 
 app.post(BASE_URL + "move_task_in_project/", async (req, res) => {
     try {
-        const taskId = req.body["data[FIELDS_AFTER][ID]"] || req.query.ID || req.params.ID || req.body.ID;
+        const taskId = req.body ? req.body["data[FIELDS_AFTER][ID]"] : req.query.ID || req.params.ID || req.body.ID;
         if (!taskId) {
             throw new Error("Task ID is not provided");
         }
@@ -136,7 +164,7 @@ app.post(BASE_URL + "move_task_in_project/", async (req, res) => {
 
         const users = await getAllUsersFromDepartments();
 
-        const task = await (await fetch(`${bxLinkDecrypted}/tasks.task.get?taskId=${taskId}&select[]=ID&select[]=TITLE&select[]=RESPONSIBLE_ID&select[]=DEADLINE&select[]=CHECKLIST&select[]=GROUP_ID&select[]=UF_AUTO_554734207359&select[]=UF_AUTO_899417333101`,{
+        const task = await (await fetch(`${bxLinkDecrypted}/tasks.task.get?taskId=${taskId}&select[]=ID&select[]=TITLE&select[]=RESPONSIBLE_ID&select[]=DEADLINE&select[]=CHECKLIST&select[]=GROUP_ID&select[]=UF_AUTO_554734207359&select[]=UF_AUTO_899417333101&select[]=UF_AUTO_903852263140`,{
             method: "POST",
                 headers: { "Content-Type": "application/json" },
         })).json();
@@ -146,6 +174,28 @@ app.post(BASE_URL + "move_task_in_project/", async (req, res) => {
         const taskData = task.result.task;
 
         const taskResponsibleUser = users.find((user) => Number(user.ID) === Number(taskData.responsibleId));
+
+        if ((taskData.ufAuto903852263140 || taskData.ufAuto903852263140 === "Y" || taskData.ufAuto903852263140 === "1")
+            && (taskData.ufAuto899417333101 !== taskResponsibleUser.ID)
+        ) {
+            const payload = {
+                fields: {
+                    GROUP_ID: 150, // ID проекта
+                    UF_AUTO_554734207359: taskData.groupId,
+                    UF_AUTO_899417333101: taskResponsibleUser.ID // Предыдущий ответственный
+                },
+            };
+
+            const response = await updateTask(taskId, payload);
+
+            if (!response) {
+                throw new Error(`Error occured while updating task ${taskId}`);
+            }
+            console.log("Asd")
+            logMessage(LOG_TYPES.I, BASE_URL + "/move_task_in_project", `Task ${taskId} - ${taskData.title} added to group - ${150}`)
+            res.send(response)
+            return;
+        }
 
         const groupId = taskResponsibleUser.UF_DEPARTMENT.includes(154)
             ? 156
@@ -166,14 +216,10 @@ app.post(BASE_URL + "move_task_in_project/", async (req, res) => {
                     },
                 };
 
-                const response = await (await fetch(`${bxLinkDecrypted}/tasks.task.update?taskId=${taskId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                })).json();
+                const response = await updateTask(taskId, payload);
 
-                if (response.error) {
-                    throw new Error(response.error_description);
+                if (!response) {
+                    throw new Error(`Error occured while updating task ${taskId}`);
                 }
 
                 logMessage(LOG_TYPES.I, BASE_URL + "/move_task_in_project", `Task ${taskId} - ${taskData.title} added to group - ${groupId} within same responsible employee`)
@@ -199,14 +245,10 @@ app.post(BASE_URL + "move_task_in_project/", async (req, res) => {
             },
         };
 
-        const response = await (await fetch(`${bxLinkDecrypted}/tasks.task.update?taskId=${taskId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-        })).json();
+        const response = await updateTask(taskId, payload);
 
-        if (response.error) {
-            throw new Error(response.error_description);
+        if (!response) {
+            throw new Error(`Error occured while updating task ${taskId}`);
         }
 
         logMessage(LOG_TYPES.I, BASE_URL + "/move_task_in_project", `Task ${taskId} - ${taskData.title} added to group - ${groupId}`)
