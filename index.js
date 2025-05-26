@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import dotenv, {parse} from 'dotenv';
+import dotenv from 'dotenv';
 import bodyParser from "body-parser";
 import fs from 'fs';
 
@@ -27,15 +27,18 @@ app.use(bodyParser.urlencoded({ extended: false }));
 const departments = [
     {
         "ID": 3,
-        "NAME": "Интеграторы"
+        "NAME": "Интеграторы",
+        "KEY": "integrators"
     },
     {
         "ID": 154,
-        "NAME": "Отдел программистов"
+        "NAME": "Отдел программистов",
+        "KEY": "programmers"
     },
     {
         "ID": 7,
-        "NAME": "Отдел продаж"
+        "NAME": "Отдел продаж",
+        "KEY": "sales"
     }
 ]
 
@@ -50,7 +53,7 @@ const groups = [
     },
     {
         "ID": 150,
-        "NAME": "Встреча"
+        "NAME": "ОП_Переговоры и встречи"
     }
 ]
 
@@ -61,13 +64,12 @@ const getAllUsersFromDepartments = async () => {
             process.env.CRYPTO_KEY,
             process.env.CRYPTO_IV
         );
-        const departmentIds = departments.map((dep) => dep.ID); // Извлекаем только ID
+        const departmentIds = departments.map((dep) => dep.ID);
         let allUsers = [];
         let start = 0;
         const batchSize = 50;
 
         while (true) {
-            // Формируем строку для фильтра UF_DEPARTMENT
             const deptFilter = departmentIds
                 .map((id) => `filter[UF_DEPARTMENT][]=${id}`)
                 .join('&');
@@ -81,7 +83,7 @@ const getAllUsersFromDepartments = async () => {
             const data = await response.json();
 
             if (!data.result || data.result.length === 0) {
-                break; // Выходим, если больше нет пользователей
+                break;
             }
 
             allUsers = allUsers.concat(data.result);
@@ -107,7 +109,7 @@ const updateTask = async (taskId, payload) => {
         })).json();
 
         if (response.error) {
-            throw new Error(response.error_description);
+            throw new Error(response["error_description"]);
         }
         return true;
     } catch (error) {
@@ -144,7 +146,7 @@ app.post(BASE_URL + "init/", async (req, res) => {
             "message": "Система готова работать с вашим битриксом!",
         });
     } catch (error) {
-        logMessage(LOG_TYPES.E, BASE_URL + "/init", error);
+        logMessage(LOG_TYPES.E, BASE_URL + "init", error);
         res.status(500).json({
             "status": false,
             "status_msg": "error",
@@ -155,7 +157,7 @@ app.post(BASE_URL + "init/", async (req, res) => {
 
 app.post(BASE_URL + "move_task_in_project/", async (req, res) => {
     try {
-        const taskId = req.body ? req.body["data[FIELDS_AFTER][ID]"] : req.query.ID || req.params.ID || req.body.ID;
+        const taskId = req.query.ID || req.params.ID || req.body.ID;
         if (!taskId) {
             throw new Error("Task ID is not provided");
         }
@@ -171,79 +173,45 @@ app.post(BASE_URL + "move_task_in_project/", async (req, res) => {
         if (!task.result || task.result.length <= 0) {
             throw new Error(`Task with ID ${taskId} not found`);
         }
-        const taskData = task.result.task;
+        const taskData = task.result["task"];
 
-        const taskResponsibleUser = users.find((user) => Number(user.ID) === Number(taskData.responsibleId));
+        const taskResponsibleUser = users.find((user) => Number(user.ID) === Number(taskData["responsibleId"]));
 
-        if ((taskData.ufAuto903852263140 || taskData.ufAuto903852263140 === "Y" || taskData.ufAuto903852263140 === "1")
-            && (taskData.ufAuto899417333101 !== taskResponsibleUser.ID)
-        ) {
-            const payload = {
+        let payload = null;
+        let groupId = 0;
+
+        if (taskData["ufAuto903852263140"] && (taskData["ufAuto903852263140"] === "Y" || taskData["ufAuto903852263140"] === "1" || taskData["ufAuto903852263140"] === 1)) {
+            payload = {
                 fields: {
-                    GROUP_ID: 150, // ID проекта
-                    UF_AUTO_554734207359: taskData.groupId,
-                    UF_AUTO_899417333101: taskResponsibleUser.ID // Предыдущий ответственный
+                    GROUP_ID: 150
                 },
             };
-
-            const response = await updateTask(taskId, payload);
-
-            if (!response) {
-                throw new Error(`Error occured while updating task ${taskId}`);
+            groupId = 150;
+        } else {
+            if (!taskResponsibleUser) {
+                throw new Error(`No user in allowed departments - ${task["responsibleId"]}`);
             }
-            console.log("Asd")
-            logMessage(LOG_TYPES.I, BASE_URL + "/move_task_in_project", `Task ${taskId} - ${taskData.title} added to group - ${150}`)
-            res.send(response)
-            return;
-        }
 
-        const groupId = taskResponsibleUser.UF_DEPARTMENT.includes(154)
-            ? 156
-            : taskResponsibleUser.UF_DEPARTMENT.includes(3)
-                ? 148
-                : null;
+            groupId = taskResponsibleUser["UF_DEPARTMENT"].includes(154)
+                ? 156
+                : taskResponsibleUser["UF_DEPARTMENT"].includes(3)
+                    ? 148
+                    : null;
 
-        if (!groupId || groupId === 0) {
-            throw new Error(`User ${taskResponsibleUser.ID} - ${taskResponsibleUser.NAME} is not in Integrators or Programmers departments`)
-        }
-
-        if (taskData.ufAuto899417333101 === taskResponsibleUser.ID) {
-            logMessage(LOG_TYPES.A, BASE_URL+ '/move_task_in_project', `Same responsible for task ${taskId}`);
-            if (Number(taskData.ufAuto554734207359) !== Number(taskData.groupId)) {
-                const payload = {
-                    fields: {
-                        UF_AUTO_554734207359: taskData.groupId,
-                    },
-                };
-
-                const response = await updateTask(taskId, payload);
-
-                if (!response) {
-                    throw new Error(`Error occured while updating task ${taskId}`);
-                }
-
-                logMessage(LOG_TYPES.I, BASE_URL + "/move_task_in_project", `Task ${taskId} - ${taskData.title} added to group - ${groupId} within same responsible employee`)
-                res.send(response)
+            if (!groupId || groupId === 0) {
+                throw new Error(`User ${taskResponsibleUser.ID} - ${taskResponsibleUser.NAME} is not in Integrators or Programmers departments`)
             }
-            res.send();
-            return;
-        } else if (taskData.ufAuto554734207359
-            && taskData.ufAuto554734207359 !== ""
-            && (Number(taskData.groupId) === Number(taskData.ufAuto554734207359))
-            && groupId === Number(taskData.groupId)
-        ) {
-            logMessage(LOG_TYPES.A, BASE_URL+ '/move_task_in_project', `Task ${taskId} is already in project - ${taskData.ufAuto554734207359} - ${taskData.groupId} - ${groups.find(group => Number(group.ID) === Number(taskData.groupId)).NAME}`);
-            res.send();
-            return;
+
+            payload = {
+                fields: {
+                    GROUP_ID: groupId
+                },
+            };
         }
 
-        const payload = {
-            fields: {
-                GROUP_ID: groupId,                // ID проекта
-                UF_AUTO_554734207359: groupId,    // Предыдущая группа
-                UF_AUTO_899417333101: taskResponsibleUser.ID // Предыдущий ответственный
-            },
-        };
+        if (!payload) {
+            throw new Error("Payload was not filled!")
+        }
 
         const response = await updateTask(taskId, payload);
 
@@ -251,11 +219,11 @@ app.post(BASE_URL + "move_task_in_project/", async (req, res) => {
             throw new Error(`Error occured while updating task ${taskId}`);
         }
 
-        logMessage(LOG_TYPES.I, BASE_URL + "/move_task_in_project", `Task ${taskId} - ${taskData.title} added to group - ${groupId}`)
+        logMessage(LOG_TYPES.I, BASE_URL + "move_task_in_project", `Task ${taskId} - ${taskData.title} added to group - ${groupId} ${groups.find(group => Number(group.ID) === groupId ).NAME}`)
         res.send(response)
 
     } catch (error) {
-        logMessage(LOG_TYPES.E, BASE_URL + "/move_task_in_project", error);
+        logMessage(LOG_TYPES.E, BASE_URL + "move_task_in_project", error);
         res.status(500).json({
             "status": false,
             "status_msg": "error",
